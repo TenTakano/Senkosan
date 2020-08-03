@@ -1,0 +1,2 @@
+defmodule Senkosan do
+end
