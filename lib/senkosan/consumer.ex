@@ -2,8 +2,8 @@ defmodule Senkosan.Consumer do
   use Nostrum.Consumer
 
   alias Nostrum.Api
+  alias Senkosan.SessionObserver
 
-  @default_voice_channel Application.get_env(:senkosan, :default_voice_channel)
   @default_text_channel Application.get_env(:senkosan, :default_text_channel)
 
   def start_link do
@@ -11,7 +11,7 @@ defmodule Senkosan.Consumer do
   end
 
   def handle_event({:VOICE_STATE_UPDATE, msg, _}) do
-    if msg.channel_id != nil and msg.channel_id == @default_voice_channel do
+    if SessionObserver.update(msg) == :join do
       Api.create_message(@default_text_channel, "おかえりなのじゃ！")
     end
   end

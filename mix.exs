@@ -22,7 +22,9 @@ defmodule Senkosan.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:nostrum, "~> 0.4"}
+      {:nostrum, "~> 0.4"},
+      {:amnesia, "~> 0.2.8"},
+      {:meck, "~> 0.9.0", only: :test}
     ]
   end
 end

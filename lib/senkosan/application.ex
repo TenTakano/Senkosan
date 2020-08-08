@@ -3,7 +3,8 @@ defmodule Senkosan.Application do
 
   def start(_type, _args) do
     children = [
-      {Senkosan.Consumer, []}
+      {Senkosan.Consumer, []},
+      {Senkosan.SessionObserver, []}
     ]
 
     opts = [strategy: :one_for_one, name: Senkosan.Supervisor]
