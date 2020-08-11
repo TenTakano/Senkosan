@@ -1,5 +1,5 @@
 defmodule Senkosan.UtilsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   import Senkosan.Utils
 
