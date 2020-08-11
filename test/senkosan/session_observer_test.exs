@@ -50,7 +50,7 @@ defmodule Senkosan.SessionObserverTest do
         bot: nil,
         discriminator: "123",
         email: nil,
-        id: 123456,
+        id: 123_456,
         mfa_enabled: nil,
         public_flags: %Struct.User.Flags{
           bug_hunter_level_1: false,
@@ -70,8 +70,8 @@ defmodule Senkosan.SessionObserverTest do
         username: "someone",
         verified: nil
       }
-   },
-   %Struct.Guild.Member{
+    },
+    %Struct.Guild.Member{
       deaf: false,
       joined_at: "2020-08-05T15:38:47.503000+00:00",
       mute: false,
@@ -82,7 +82,7 @@ defmodule Senkosan.SessionObserverTest do
         bot: true,
         discriminator: "321",
         email: nil,
-        id: 654321,
+        id: 654_321,
         mfa_enabled: nil,
         public_flags: %Struct.User.Flags{
           bug_hunter_level_1: false,
@@ -111,7 +111,7 @@ defmodule Senkosan.SessionObserverTest do
 
   describe "init/1" do
     test "generates member list" do
-      :meck.expect(Api, :list_guild_members!, fn (guild_id, _) ->
+      :meck.expect(Api, :list_guild_members!, fn guild_id, _ ->
         send(self(), {:guild_id, guild_id})
         @dummy_users
       end)
@@ -130,24 +130,29 @@ defmodule Senkosan.SessionObserverTest do
   describe "When handle_call/1 gets :update, handle_call/1" do
     test "returns :join if the user move to the default voice channel" do
       user_id = 12345
-      channel_id = 123456789
-      :meck.expect(Application, :get_env, fn (:senkosan, :default_voice_channel) -> channel_id end)
+      channel_id = 123_456_789
+      :meck.expect(Application, :get_env, fn :senkosan, :default_voice_channel -> channel_id end)
 
-      Enum.each([
-        {nil, channel_id, :join},
-        {channel_id, nil, :left},
-        {987654321, channel_id, :other},
-        {channel_id, 987654321, :other},
-        {channel_id, channel_id, :other}
-      ], fn {prev_channel, new_channel, transition} ->
-        prev_state = %{user_id => %{channel_id: prev_channel, is_bot: false}}
-        msg = %{channel_id: new_channel, member: %{user: %{id: user_id}}}
+      Enum.each(
+        [
+          {nil, channel_id, :join},
+          {channel_id, nil, :left},
+          {987_654_321, channel_id, :other},
+          {channel_id, 987_654_321, :other},
+          {channel_id, channel_id, :other}
+        ],
+        fn {prev_channel, new_channel, transition} ->
+          prev_state = %{user_id => %{channel_id: prev_channel, is_bot: false}}
+          msg = %{channel_id: new_channel, member: %{user: %{id: user_id}}}
 
-        expected_state = %{user_id => %{channel_id: new_channel, is_bot: false}}
+          expected_state = %{user_id => %{channel_id: new_channel, is_bot: false}}
 
-        assert {:reply, ^transition, new_state} = SessionObserver.handle_call({:update, msg}, [], prev_state)
-        assert new_state == expected_state
-      end)
+          assert {:reply, ^transition, new_state} =
+                   SessionObserver.handle_call({:update, msg}, [], prev_state)
+
+          assert new_state == expected_state
+        end
+      )
     end
   end
 end
