@@ -12,9 +12,10 @@ defmodule Senkosan.Consumer do
   end
 
   def handle_event({:VOICE_STATE_UPDATE, msg, _}) do
+    IO.inspect msg
     if SessionObserver.update(msg) == :join do
       Utils.apply_bot_usage(
-        msg.member.user.bot,
+        Map.get(msg.member.user, :bot, false),
         fn -> Api.create_message(@default_text_channel, "おかえりなのじゃ！") end
       )
     end
