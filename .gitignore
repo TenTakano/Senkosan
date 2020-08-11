@@ -23,4 +23,4 @@ erl_crash.dump
 senkosan-*.tar
 
 # Ignore config file
-/config/
+/config/config.exs

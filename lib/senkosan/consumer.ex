@@ -3,6 +3,7 @@ defmodule Senkosan.Consumer do
 
   alias Nostrum.Api
   alias Senkosan.SessionObserver
+  alias Senkosan.Utils
 
   @default_text_channel Application.get_env(:senkosan, :default_text_channel)
 
@@ -12,7 +13,10 @@ defmodule Senkosan.Consumer do
 
   def handle_event({:VOICE_STATE_UPDATE, msg, _}) do
     if SessionObserver.update(msg) == :join do
-      Api.create_message(@default_text_channel, "おかえりなのじゃ！")
+      Utils.apply_bot_usage(
+        msg.member.user.bot,
+        fn -> Api.create_message(@default_text_channel, "おかえりなのじゃ！") end
+      )
     end
   end
 

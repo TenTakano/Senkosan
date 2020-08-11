@@ -14,6 +14,7 @@ defmodule Senkosan.SessionObserver do
   @impl true
   def init(_) do
     %{id: guild_id} = hd(Api.get_current_user_guilds!())
+
     member_list =
       guild_id
       |> Api.list_guild_members!(limit: 1000)
@@ -47,8 +48,10 @@ defmodule Senkosan.SessionObserver do
     case {prev_channel_id, msg.channel_id} do
       {nil, ^default_voice_channel} ->
         :join
+
       {_, nil} ->
         :left
+
       _ ->
         :other
     end
