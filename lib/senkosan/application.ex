@@ -3,14 +3,10 @@ defmodule Senkosan.Application do
 
   def start(_type, _args) do
     children =
-      if Mix.env() != :test do
-        [
-          {Senkosan.Consumer, []},
-          {Senkosan.SessionObserver, []}
-        ]
-      else
-        []
-      end
+      [
+        {Senkosan.Consumer, []},
+        {Senkosan.SessionObserver, []}
+      ]
 
     opts = [strategy: :one_for_one, name: Senkosan.Supervisor]
     Supervisor.start_link(children, opts)
