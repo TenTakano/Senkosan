@@ -1,5 +1,5 @@
 defmodule Senkosan.SessionObserverTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Nostrum.Api
   alias Senkosan.SessionObserver
@@ -121,38 +121,40 @@ defmodule Senkosan.SessionObserverTest do
         |> Enum.map(&{&1.user.id, %{channel_id: nil, is_bot: &1.user.bot}})
         |> Map.new()
 
-      assert {:ok, members} = SessionObserver.init([])
-      assert members == expected
+      assert SessionObserver.init([]) == expected
       assert_received {:guild_id, @dummy_guild_id}
     end
   end
 
-  describe "When handle_call/1 gets :update, handle_call/1" do
-    test "returns :join if the user move to the default voice channel" do
+  describe "update/1" do
+    test "returns transition type for user transition" do
+      default_vc = Application.get_env(:senkosan, :default_voice_channel)
       user_id = 12345
-      channel_id = 123_456_789
-      :meck.expect(Application, :get_env, fn :senkosan, :default_voice_channel -> channel_id end)
 
-      Enum.each(
-        [
-          {nil, channel_id, :join},
-          {channel_id, nil, :left},
-          {987_654_321, channel_id, :other},
-          {channel_id, 987_654_321, :other},
-          {channel_id, channel_id, :other}
+      {:ok, observer} = Agent.start_link(fn -> %{} end, name: SessionObserver)
+
+      for(
+        {new_channel_id, channel_id, expected} <- [
+          {default_vc, nil, :join},
+          {nil, default_vc, :left},
+          {default_vc, 123, :other},
+          {123, default_vc, :other},
+          {default_vc, default_vc, :other},
+          {123, 123, :other},
+          {123, 456, :other},
+          {nil, nil, :other}
         ],
-        fn {prev_channel, new_channel, transition} ->
-          prev_state = %{user_id => %{channel_id: prev_channel, is_bot: false}}
-          msg = %{channel_id: new_channel, member: %{user: %{id: user_id}}}
+        is_bot <- [true, false]
+      ) do
+        users = %{user_id => %{channel_id: channel_id, id_bot: is_bot}}
+        Agent.update(observer, fn _ -> users end)
 
-          expected_state = %{user_id => %{channel_id: new_channel, is_bot: false}}
+        msg = {new_channel_id, user_id}
+        assert SessionObserver.update(msg) == expected
 
-          assert {:reply, ^transition, new_state} =
-                   SessionObserver.handle_call({:update, msg}, [], prev_state)
-
-          assert new_state == expected_state
-        end
-      )
+        expected_new_users = update_in(users, [user_id, :channel_id], fn _ -> new_channel_id end)
+        assert Agent.get(observer, &(&1)) == expected_new_users
+      end
     end
   end
 end

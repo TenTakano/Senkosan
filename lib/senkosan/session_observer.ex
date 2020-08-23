@@ -1,55 +1,43 @@
 defmodule Senkosan.SessionObserver do
-  use GenServer
+  use Agent
 
   alias Nostrum.Api
 
   def start_link(state) do
-    GenServer.start_link(__MODULE__, state, name: __MODULE__)
+    Agent.start_link(fn -> init(state) end, name: __MODULE__)
   end
 
-  def update(msg) do
-    GenServer.call(__MODULE__, {:update, msg})
-  end
-
-  @impl true
   def init(_) do
     %{id: guild_id} = hd(Api.get_current_user_guilds!())
 
-    member_list =
-      guild_id
-      |> Api.list_guild_members!(limit: 1000)
-      |> format_member_list()
-
-    {:ok, member_list}
+    guild_id
+    |> Api.list_guild_members!(limit: 1000)
+    |> Enum.into(%{}, &format_member_list/1)
   end
 
-  defp format_member_list(members) do
-    Enum.reduce(members, %{}, fn %{user: user}, acc ->
-      state = %{
-        channel_id: nil,
-        is_bot: user.bot
-      }
+  defp format_member_list(%{user: %{id: user_id, bot: is_bot}}) do
+    state = %{
+      channel_id: nil,
+      is_bot: is_bot
+    }
 
-      Map.put(acc, user.id, state)
-    end)
+    {user_id, state}
   end
 
-  @impl true
-  def handle_call({:update, msg}, _client, state) do
-    state_transition = process_state_transition(msg, state)
-    new_state = update_state(msg, state)
-    {:reply, state_transition, new_state}
+  def update(channel_user) do
+    state = Agent.get_and_update(__MODULE__, &{&1, update_state(channel_user, &1)})
+    process_state_transition(channel_user, state)
   end
 
-  defp process_state_transition(msg, members) do
+  defp process_state_transition({new_channel_id, user_id}, members) do
     default_voice_channel = Application.get_env(:senkosan, :default_voice_channel)
-    %{channel_id: prev_channel_id} = Map.get(members, msg.member.user.id)
+    %{channel_id: prev_channel_id} = Map.get(members, user_id)
 
-    case {prev_channel_id, msg.channel_id} do
+    case {prev_channel_id, new_channel_id} do
       {nil, ^default_voice_channel} ->
         :join
 
-      {_, nil} ->
+      {channel_id, nil} when is_number(channel_id) ->
         :left
 
       _ ->
@@ -57,12 +45,12 @@ defmodule Senkosan.SessionObserver do
     end
   end
 
-  defp update_state(msg, members) do
-    user_id = msg.member.user.id
+  defp update_state({new_channel_id, user_id}, members) do
+    user_id = user_id
 
     new_user_state =
       Map.get(members, user_id)
-      |> Map.put(:channel_id, msg.channel_id)
+      |> Map.put(:channel_id, new_channel_id)
 
     Map.put(members, user_id, new_user_state)
   end
