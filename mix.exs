@@ -4,7 +4,7 @@ defmodule Senkosan.MixProject do
   def project do
     [
       app: :senkosan,
-      version: "0.0.1",
+      version: "0.0.2",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -16,7 +16,7 @@ defmodule Senkosan.MixProject do
     if Mix.env() != :test do
       [
         extra_applications: [:logger],
-        mod: {Senkosan.Application, []}
+        mod: {Senkosan, []}
       ]
     else
       [extra_applications: [:logger]]
