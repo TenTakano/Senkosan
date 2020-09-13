@@ -153,7 +153,7 @@ defmodule Senkosan.VoiceState.ObserverTest do
         assert Observer.update(msg) == expected
 
         expected_new_users = update_in(users, [user_id, :channel_id], fn _ -> new_channel_id end)
-        assert Agent.get(observer, &(&1)) == expected_new_users
+        assert Agent.get(observer, & &1) == expected_new_users
       end
     end
   end
