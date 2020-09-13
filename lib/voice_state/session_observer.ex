@@ -1,4 +1,6 @@
 defmodule Senkosan.VoiceState.Observer do
+  @moduledoc false
+
   use Agent
 
   alias Nostrum.Api

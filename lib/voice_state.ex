@@ -1,4 +1,6 @@
 defmodule Senkosan.VoiceState do
+  @moduledoc false
+
   alias Nostrum.Api
   alias Senkosan.VoiceState.Observer
   alias Senkosan.Utils

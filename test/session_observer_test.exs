@@ -129,7 +129,7 @@ defmodule Senkosan.VoiceState.ObserverTest do
   describe "update/1" do
     test "returns transition type for user transition" do
       default_vc = Application.get_env(:senkosan, :default_voice_channel)
-      user_id = 12345
+      user_id = 12_345
 
       {:ok, observer} = Agent.start_link(fn -> %{} end, name: Observer)
 
@@ -153,7 +153,7 @@ defmodule Senkosan.VoiceState.ObserverTest do
         assert Observer.update(msg) == expected
 
         expected_new_users = update_in(users, [user_id, :channel_id], fn _ -> new_channel_id end)
-        assert Agent.get(observer, & &1) == expected_new_users
+        assert Agent.get(observer, &(&1)) == expected_new_users
       end
     end
   end

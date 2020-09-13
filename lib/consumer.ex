@@ -1,4 +1,6 @@
 defmodule Senkosan.Consumer do
+  @moduledoc false
+
   use Nostrum.Consumer
 
   def start_link do
