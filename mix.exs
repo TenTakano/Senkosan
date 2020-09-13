@@ -27,7 +27,7 @@ defmodule Senkosan.MixProject do
   defp deps do
     [
       {:nostrum, "~> 0.4"},
-      {:credo, "~> 1.4"},
+      {:credo, "~> 1.4", only: :dev},
       {:meck, "~> 0.9.0", only: :test}
     ]
   end
