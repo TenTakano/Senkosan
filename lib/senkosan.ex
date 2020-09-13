@@ -5,7 +5,7 @@ defmodule Senkosan do
     children =
       [
         {Senkosan.Consumer, []},
-        {Senkosan.SessionObserver, []}
+        {Senkosan.VoiceState.Observer, []}
       ]
 
     opts = [strategy: :one_for_one, name: Senkosan.Supervisor]

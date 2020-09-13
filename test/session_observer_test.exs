@@ -1,8 +1,8 @@
-defmodule Senkosan.SessionObserverTest do
+defmodule Senkosan.VoiceState.ObserverTest do
   use ExUnit.Case, async: true
 
   alias Nostrum.Api
-  alias Senkosan.SessionObserver
+  alias Senkosan.VoiceState.Observer
   alias Nostrum.Struct
 
   @dummy_guild_id 123
@@ -121,7 +121,7 @@ defmodule Senkosan.SessionObserverTest do
         |> Enum.map(&{&1.user.id, %{channel_id: nil, is_bot: &1.user.bot}})
         |> Map.new()
 
-      assert SessionObserver.init([]) == expected
+      assert Observer.init([]) == expected
       assert_received {:guild_id, @dummy_guild_id}
     end
   end
@@ -131,7 +131,7 @@ defmodule Senkosan.SessionObserverTest do
       default_vc = Application.get_env(:senkosan, :default_voice_channel)
       user_id = 12345
 
-      {:ok, observer} = Agent.start_link(fn -> %{} end, name: SessionObserver)
+      {:ok, observer} = Agent.start_link(fn -> %{} end, name: Observer)
 
       for(
         {new_channel_id, channel_id, expected} <- [
@@ -150,7 +150,7 @@ defmodule Senkosan.SessionObserverTest do
         Agent.update(observer, fn _ -> users end)
 
         msg = {new_channel_id, user_id}
-        assert SessionObserver.update(msg) == expected
+        assert Observer.update(msg) == expected
 
         expected_new_users = update_in(users, [user_id, :channel_id], fn _ -> new_channel_id end)
         assert Agent.get(observer, &(&1)) == expected_new_users
