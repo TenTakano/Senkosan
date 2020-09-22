@@ -1,6 +1,8 @@
 defmodule Senkosan.Ets.VoiceState do
   use Agent
 
+  @type t :: __MODULE__.t
+
   @enforce_keys [:name, :is_bot]
   defstruct [:name, :is_bot, :channel_id, is_greeted: false]
 
@@ -15,9 +17,15 @@ defmodule Senkosan.Ets.VoiceState do
     |> :ets.insert_new({user_id, attrs})
   end
 
-  @spec get_state(integer) :: t
-  def get_state(user_id) do
+  @spec fetch(integer) :: t
+  def fetch(user_id) do
     Agent.get(__MODULE__, &(&1))
     |> :ets.lookup_element(user_id, 2)
+  end
+
+  @spec update(integer, t) :: boolean
+  def update(user_id, attrs) do
+    Agent.get(__MODULE__, &(&1))
+    |> :ets.update_element(user_id, {2, attrs})
   end
 end
