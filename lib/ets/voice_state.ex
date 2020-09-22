@@ -9,6 +9,7 @@ defmodule Senkosan.Ets.VoiceState do
   def start_link() do
     table = :ets.new(:voice_state, [:ordered_set, :protected])
     Agent.start_link(fn -> table end, name: __MODULE__)
+    table
   end
 
   @spec insert(integer, t) :: boolean
