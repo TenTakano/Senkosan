@@ -28,7 +28,8 @@ defmodule Senkosan.MixProject do
     [
       {:nostrum, "~> 0.4"},
       {:credo, "~> 1.4", only: :dev},
-      {:meck, "~> 0.9.0", only: :test}
+      {:meck, "~> 0.9.0", only: :test},
+      {:ex_machina, "~> 2.4", only: :test}
     ]
   end
 end
