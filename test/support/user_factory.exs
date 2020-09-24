@@ -20,10 +20,10 @@ defmodule Senkosan.UserFactory do
         bot: nil,
         discriminator: "123",
         email: nil,
-        id: 123_456,
+        id: sequence(:user_id, &(&1)),
         mfa_enabled: nil,
         public_flags: build(:user_flag),
-        username: "someone",
+        username: sequence("someone-"),
         verified: nil
       }
   end
