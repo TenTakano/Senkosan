@@ -1,14 +1,14 @@
 defmodule Senkosan.Ets.VoiceState do
   use Agent
 
-  alias Nostrum.Struct.Message
-
   @type t :: __MODULE__.t
 
   @enforce_keys [:name, :is_bot]
-  defstruct [:name, :is_bot, :channel_id, is_greeted: false]
+  defstruct [:name, :is_bot, :channel_id, left_at: ~U[2000-01-01 00:00:00Z]]
 
   @table_name :senkosan_voice_state
+  @ignore_seconds 15 * 60
+  @default_voice_channel 123
 
   @doc """
   Creates a table to contain the voice states and insertes user states.
@@ -31,17 +31,31 @@ defmodule Senkosan.Ets.VoiceState do
     :ok
   end
 
-  @spec get_op(map) :: atom
-  def get_op(%{channel_id: new_channel_id, user_id: user_id} = _) do
+  @doc """
+  Process state transitions and updates channel_id the user joins to.
+  """
+  @spec process_transition(map) :: atom
+  def process_transition(%{channel_id: new_channel_id, user_id: user_id} = _) do
     user = :ets.lookup_element(@table_name, user_id, 2)
+    trig_time =
+      DateTime.utc_now()
+      |> DateTime.add(-@ignore_seconds)
 
-    case {user, new_channel_id} do
-      {%{channel_id: prev}, new} when prev == new ->
+    case {user.channel_id, new_channel_id, DateTime.compare(user.left_at, trig_time)} do
+      {prev, new, _} when prev == new ->
         :mic_op
-      {%{channel_id: nil}, _} ->
+      {_, @default_voice_channel, :lt} ->
+        new_user_attr = Map.put(user, :channel_id, new_channel_id)
+        :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :join
-      {_, nil} ->
-        :left
+      {_, @default_voice_channel, _} ->
+        new_user_attr = Map.put(user, :channel_id, new_channel_id)
+        :ets.update_element(@table_name, user_id, {2, new_user_attr})
+        :reload
+      _ ->
+        new_user_attr = Map.merge(user, %{channel_id: new_channel_id, left_at: DateTime.utc_now()})
+        :ets.update_element(@table_name, user_id, {2, new_user_attr})
+        :other_transition
     end
   end
 end
