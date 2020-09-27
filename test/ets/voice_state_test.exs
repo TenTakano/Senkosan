@@ -24,7 +24,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
     end
   end
 
-  describe "get_op/1 " do
+  describe "process_transition/1 " do
     setup do
       :ets.new(@table_name, [:ordered_set, :protected, :named_table])
 
@@ -57,7 +57,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
         :ets.update_element(@table_name, user_id, {2, user})
 
         message = Map.put(message_base, :channel_id, channel_id)
-        assert VoiceState.get_op(message) == :mic_op
+        assert VoiceState.process_transition(message) == :mic_op
         assert :ets.lookup_element(@table_name, user_id, 2) == user
       end)
     end
@@ -74,7 +74,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
       user = Map.put(user_base, :left_at, left_at)
       :ets.update_element(@table_name, user_id, {2, user})
 
-      assert VoiceState.get_op(message) == :join
+      assert VoiceState.process_transition(message) == :join
 
       user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
       assert user_channel_id == default_voice_channel
@@ -92,7 +92,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
       user = Map.put(user_base, :left_at, left_at)
       :ets.update_element(@table_name, user_id, {2, user})
 
-      assert VoiceState.get_op(message) == :reload
+      assert VoiceState.process_transition(message) == :reload
 
       user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
       assert user_channel_id == default_voice_channel
@@ -117,7 +117,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
         user = Map.put(user_base, :channel_id, orig)
         :ets.update_element(@table_name, user_id, {2, user})
         
-        assert VoiceState.get_op(message) == :other_transition
+        assert VoiceState.process_transition(message) == :other_transition
 
         user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
         assert user_channel_id == dest
