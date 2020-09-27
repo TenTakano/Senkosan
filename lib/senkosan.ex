@@ -7,8 +7,7 @@ defmodule Senkosan do
     init_voice_state()
 
     children = [
-      {Senkosan.Consumer, []},
-      {Senkosan.VoiceState.Observer, []}
+      {Senkosan.Consumer, []}
     ]
 
     opts = [strategy: :one_for_one, name: Senkosan.Supervisor]
