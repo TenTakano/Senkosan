@@ -17,7 +17,7 @@ defmodule Senkosan.UserFactory do
   def user_factory() do
     %Struct.User{
       avatar: "abc",
-      bot: nil,
+      bot: true,
       discriminator: "123",
       email: nil,
       id: sequence(:user_id, & &1),
