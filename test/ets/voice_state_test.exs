@@ -34,12 +34,19 @@ defmodule Senkosan.Ets.VoiceStateTest do
         is_bot: false
       }
       :ets.insert(@table_name, {user_id, user_base})
+      channel_id = 123
+      message = MessageFactory.build(:voice_state, %{channel_id: channel_id, user_id: user_id})
 
-      {:ok, user_id: user_id, user_base: user_base, default_voice_channel: 123}
+      {:ok, user_id: user_id, user_base: user_base, default_voice_channel: channel_id, message: message}
     end
 
     test "returns :mic_op if prev channel id equals new channel id", ctx do
-      %{user_id: user_id, user_base: user_base, default_voice_channel: default_voice_channel} = ctx
+      %{
+        user_id: user_id,
+        user_base: user_base,
+        default_voice_channel: default_voice_channel,
+        message: message_base
+      } = ctx
 
       Enum.each([
         nil,
@@ -49,9 +56,71 @@ defmodule Senkosan.Ets.VoiceStateTest do
         user = Map.put(user_base, :channel_id, channel_id)
         :ets.update_element(@table_name, user_id, {2, user})
 
-        message = MessageFactory.build(:voice_state, %{channel_id: channel_id, user_id: user_id})
+        message = Map.put(message_base, :channel_id, channel_id)
         assert VoiceState.get_op(message) == :mic_op
         assert :ets.lookup_element(@table_name, user_id, 2) == user
+      end)
+    end
+
+    test "returns :join if the user joins in more than 15 mins after the user left", ctx do
+      %{
+        user_id: user_id,
+        user_base: user_base,
+        default_voice_channel: default_voice_channel,
+        message: message
+      } = ctx
+
+      left_at = DateTime.utc_now() |> DateTime.add(-(15 * 60 + 1))
+      user = Map.put(user_base, :left_at, left_at)
+      :ets.update_element(@table_name, user_id, {2, user})
+
+      assert VoiceState.get_op(message) == :join
+
+      user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
+      assert user_channel_id == default_voice_channel
+    end
+
+    test "returns :reload if the user joins again in less than 15 mins", ctx do
+      %{
+        user_id: user_id,
+        user_base: user_base,
+        default_voice_channel: default_voice_channel,
+        message: message
+      } = ctx
+
+      left_at = DateTime.utc_now() |> DateTime.add(-(15 * 60 - 1))
+      user = Map.put(user_base, :left_at, left_at)
+      :ets.update_element(@table_name, user_id, {2, user})
+
+      assert VoiceState.get_op(message) == :reload
+
+      user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
+      assert user_channel_id == default_voice_channel
+    end
+
+    test "returns :other_transition for the cases that the destination is not the default voice channel", ctx do
+      %{
+        user_id: user_id,
+        user_base: user_base,
+        default_voice_channel: default_voice_channel,
+        message: message_base
+      } = ctx
+
+      Enum.each([
+        {default_voice_channel, nil},
+        {default_voice_channel, 321},
+        {234, nil},
+        {nil, 234},
+        {234, 245}
+      ], fn {orig, dest} ->
+        message = Map.put(message_base, :channel_id, dest)
+        user = Map.put(user_base, :channel_id, orig)
+        :ets.update_element(@table_name, user_id, {2, user})
+        
+        assert VoiceState.get_op(message) == :other_transition
+
+        user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
+        assert user_channel_id == dest
       end)
     end
   end
