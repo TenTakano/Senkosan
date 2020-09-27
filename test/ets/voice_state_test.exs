@@ -2,45 +2,25 @@ defmodule Senkosan.Ets.VoiceStateTest do
   use ExUnit.Case, async: true
 
   alias Senkosan.Ets.VoiceState
+  alias Senkosan.UserFactory
 
-  setup do
-    table = VoiceState.start_link()
-    user_id = 123
-    expected = %VoiceState{
-      name: "someone",
-      is_bot: false,
-      channel_id: nil,
-      is_greeted: false
-    }
-    {:ok, table: table, user_id: user_id, expected: expected}
-  end
+  @table_name :senkosan_voice_state
 
-  test "insert/2 inserts given attrs and returns the process sccess or not", ctx do
-    %{table: table, user_id: user_id, expected: expected} = ctx
-    assert :ets.first(table) == :"$end_of_table"
+  describe "init/1 " do
+    test "creates voice_state table on ETS and inserts the formatted user attributes" do
+      guild_id = 123
+      users = UserFactory.build_pair(:guild_member)
+      :meck.expect(Nostrum.Api, :list_guild_members!, fn (^guild_id, limit: 1000) -> users end)
 
-    assert VoiceState.insert(user_id, expected) == true
-    assert :ets.lookup_element(table, user_id, 2) == expected
-  end
+      expected =
+        users
+        |> Enum.map(fn %{user: user} ->
+          {user.id, %VoiceState{name: user.username, is_bot: user.bot}}
+        end)
+        |> Enum.sort_by(&elem(&1, 0))
 
-  test "fetch/1 returns attributes of user whose id matches with given user_id", ctx do
-    %{table: table, user_id: user_id, expected: expected} = ctx
-    :ets.insert(table, {user_id, expected})
-
-    assert VoiceState.fetch(user_id) == expected
-  end
-
-  test "update/2 updates existing user state with given attributes and return the process success or not", ctx do
-    %{table: table, user_id: user_id, expected: user_state} = ctx
-    :ets.insert(table, {user_id, user_state})
-
-    expected = %VoiceState{
-      name: "updated_user",
-      is_bot: false,
-      channel_id: nil,
-      is_greeted: false
-    }
-    assert VoiceState.update(user_id, expected) == true
-    assert :ets.lookup_element(table, user_id, 2) == expected
+      assert VoiceState.init(guild_id) == :ok
+      assert List.flatten(:ets.match(@table_name, :"$1")) == expected
+    end
   end
 end
