@@ -58,4 +58,19 @@ defmodule Senkosan.Ets.VoiceState do
         :other_transition
     end
   end
+
+  @doc """
+  Returns if the user is bot or not
+
+  If the user doesn't exist, :error is returned
+  """
+  @spec bot_user?(integer) :: {:ok, boolean} | :error
+  def bot_user?(user_id) do
+    case :ets.lookup(@table_name, user_id) do
+      [] ->
+        :error
+      [{_, %{is_bot: is_bot}}] ->
+        {:ok, is_bot}
+    end
+  end
 end

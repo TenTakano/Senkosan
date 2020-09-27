@@ -124,4 +124,28 @@ defmodule Senkosan.Ets.VoiceStateTest do
       end)
     end
   end
+
+  describe "bot_user?/1 " do
+    setup do
+      :ets.new(@table_name, [:ordered_set, :protected, :named_table])
+      :ok
+    end
+
+    test "returns if the user is bot or not" do
+      Enum.each([true, false], fn is_bot ->
+        user_id = 1
+        user = %VoiceState{
+          name: "someone",
+          is_bot: is_bot
+        }
+        :ets.insert(@table_name, {user_id, user})
+
+        assert VoiceState.bot_user?(user_id) == {:ok, is_bot}
+      end)
+    end
+
+    test "returns :error if the user doesn't exist" do
+      assert VoiceState.bot_user?(3) == :error
+    end
+  end
 end
