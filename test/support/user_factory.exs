@@ -16,16 +16,16 @@ defmodule Senkosan.UserFactory do
 
   def user_factory() do
     %Struct.User{
-        avatar: "abc",
-        bot: nil,
-        discriminator: "123",
-        email: nil,
-        id: sequence(:user_id, &(&1)),
-        mfa_enabled: nil,
-        public_flags: build(:user_flag),
-        username: sequence("someone-"),
-        verified: nil
-      }
+      avatar: "abc",
+      bot: nil,
+      discriminator: "123",
+      email: nil,
+      id: sequence(:user_id, & &1),
+      mfa_enabled: nil,
+      public_flags: build(:user_flag),
+      username: sequence("someone-"),
+      verified: nil
+    }
   end
 
   def user_flag_factory() do

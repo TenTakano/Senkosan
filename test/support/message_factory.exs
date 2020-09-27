@@ -2,7 +2,7 @@ defmodule Senkosan.MessageFactory do
   use ExMachina
 
   def voice_state_factory() do
-    user_id = sequence(:voice_state_user_id, &(&1))
+    user_id = sequence(:voice_state_user_id, & &1)
 
     %{
       channel_id: nil,

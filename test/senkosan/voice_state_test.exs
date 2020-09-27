@@ -10,7 +10,7 @@ defmodule Senkosan.VoiceStateTest do
     test "creates voice_state table on ETS and inserts the formatted user attributes" do
       guild_id = 123
       users = UserFactory.build_pair(:guild_member)
-      :meck.expect(Nostrum.Api, :list_guild_members!, fn (^guild_id, limit: 1000) -> users end)
+      :meck.expect(Nostrum.Api, :list_guild_members!, fn ^guild_id, limit: 1000 -> users end)
 
       expected =
         users
@@ -29,15 +29,18 @@ defmodule Senkosan.VoiceStateTest do
       :ets.new(@table_name, [:ordered_set, :protected, :named_table])
 
       user_id = 1
+
       user_base = %VoiceState{
         name: "someone",
         is_bot: false
       }
+
       :ets.insert(@table_name, {user_id, user_base})
       channel_id = Application.get_env(:senkosan, :default_voice_channel)
       message = MessageFactory.build(:voice_state, %{channel_id: channel_id, user_id: user_id})
 
-      {:ok, user_id: user_id, user_base: user_base, default_voice_channel: channel_id, message: message}
+      {:ok,
+       user_id: user_id, user_base: user_base, default_voice_channel: channel_id, message: message}
     end
 
     test "returns :mic_op if prev channel id equals new channel id", ctx do
@@ -48,18 +51,21 @@ defmodule Senkosan.VoiceStateTest do
         message: message_base
       } = ctx
 
-      Enum.each([
-        nil,
-        default_voice_channel,
-        456
-      ], fn channel_id ->
-        user = Map.put(user_base, :channel_id, channel_id)
-        :ets.update_element(@table_name, user_id, {2, user})
+      Enum.each(
+        [
+          nil,
+          default_voice_channel,
+          456
+        ],
+        fn channel_id ->
+          user = Map.put(user_base, :channel_id, channel_id)
+          :ets.update_element(@table_name, user_id, {2, user})
 
-        message = Map.put(message_base, :channel_id, channel_id)
-        assert VoiceState.process_transition(message) == :mic_op
-        assert :ets.lookup_element(@table_name, user_id, 2) == user
-      end)
+          message = Map.put(message_base, :channel_id, channel_id)
+          assert VoiceState.process_transition(message) == :mic_op
+          assert :ets.lookup_element(@table_name, user_id, 2) == user
+        end
+      )
     end
 
     test "returns :join if the user joins in more than 15 mins after the user left", ctx do
@@ -98,7 +104,8 @@ defmodule Senkosan.VoiceStateTest do
       assert user_channel_id == default_voice_channel
     end
 
-    test "returns :other_transition for the cases that the destination is not the default voice channel", ctx do
+    test "returns :other_transition for the cases that the destination is not the default voice channel",
+         ctx do
       %{
         user_id: user_id,
         user_base: user_base,
@@ -106,22 +113,25 @@ defmodule Senkosan.VoiceStateTest do
         message: message_base
       } = ctx
 
-      Enum.each([
-        {default_voice_channel, nil},
-        {default_voice_channel, 321},
-        {234, nil},
-        {nil, 234},
-        {234, 245}
-      ], fn {orig, dest} ->
-        message = Map.put(message_base, :channel_id, dest)
-        user = Map.put(user_base, :channel_id, orig)
-        :ets.update_element(@table_name, user_id, {2, user})
+      Enum.each(
+        [
+          {default_voice_channel, nil},
+          {default_voice_channel, 321},
+          {234, nil},
+          {nil, 234},
+          {234, 245}
+        ],
+        fn {orig, dest} ->
+          message = Map.put(message_base, :channel_id, dest)
+          user = Map.put(user_base, :channel_id, orig)
+          :ets.update_element(@table_name, user_id, {2, user})
 
-        assert VoiceState.process_transition(message) == :other_transition
+          assert VoiceState.process_transition(message) == :other_transition
 
-        user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
-        assert user_channel_id == dest
-      end)
+          user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
+          assert user_channel_id == dest
+        end
+      )
     end
   end
 
@@ -134,10 +144,12 @@ defmodule Senkosan.VoiceStateTest do
     test "returns if the user is bot or not" do
       Enum.each([true, false], fn is_bot ->
         user_id = 1
+
         user = %VoiceState{
           name: "someone",
           is_bot: is_bot
         }
+
         :ets.insert(@table_name, {user_id, user})
 
         assert VoiceState.bot_user?(user_id) == {:ok, is_bot}

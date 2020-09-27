@@ -3,7 +3,7 @@ defmodule Senkosan.VoiceState do
 
   use Agent
 
-  @type t :: __MODULE__.t
+  @type t :: __MODULE__.t()
 
   @enforce_keys [:name, :is_bot]
   defstruct [:name, :is_bot, :channel_id, left_at: ~U[2000-01-01 00:00:00Z]]
@@ -26,6 +26,7 @@ defmodule Senkosan.VoiceState do
         name: user.username,
         is_bot: user.bot
       }
+
       :ets.insert(@table_name, {user.id, attrs})
     end)
 
@@ -39,6 +40,7 @@ defmodule Senkosan.VoiceState do
   def process_transition(%{channel_id: new_channel_id, user_id: user_id} = _) do
     default_voice_channel = Application.get_env(:senkosan, :default_voice_channel)
     user = :ets.lookup_element(@table_name, user_id, 2)
+
     trig_time =
       DateTime.utc_now()
       |> DateTime.add(-@ignore_seconds)
@@ -46,16 +48,21 @@ defmodule Senkosan.VoiceState do
     case {user.channel_id, new_channel_id, DateTime.compare(user.left_at, trig_time)} do
       {prev, new, _} when prev == new ->
         :mic_op
+
       {_, ^default_voice_channel, :lt} ->
         new_user_attr = Map.put(user, :channel_id, new_channel_id)
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :join
+
       {_, ^default_voice_channel, _} ->
         new_user_attr = Map.put(user, :channel_id, new_channel_id)
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :reload
+
       _ ->
-        new_user_attr = Map.merge(user, %{channel_id: new_channel_id, left_at: DateTime.utc_now()})
+        new_user_attr =
+          Map.merge(user, %{channel_id: new_channel_id, left_at: DateTime.utc_now()})
+
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :other_transition
     end
@@ -71,6 +78,7 @@ defmodule Senkosan.VoiceState do
     case :ets.lookup(@table_name, user_id) do
       [] ->
         :error
+
       [{_, %{is_bot: is_bot}}] ->
         {:ok, is_bot}
     end
