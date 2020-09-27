@@ -34,7 +34,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
         is_bot: false
       }
       :ets.insert(@table_name, {user_id, user_base})
-      channel_id = 123
+      channel_id = Application.get_env(:senkosan, :default_voice_channel)
       message = MessageFactory.build(:voice_state, %{channel_id: channel_id, user_id: user_id})
 
       {:ok, user_id: user_id, user_base: user_base, default_voice_channel: channel_id, message: message}

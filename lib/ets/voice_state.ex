@@ -8,7 +8,6 @@ defmodule Senkosan.Ets.VoiceState do
 
   @table_name :senkosan_voice_state
   @ignore_seconds 15 * 60
-  @default_voice_channel 123
 
   @doc """
   Creates a table to contain the voice states and insertes user states.
@@ -36,6 +35,7 @@ defmodule Senkosan.Ets.VoiceState do
   """
   @spec process_transition(map) :: atom
   def process_transition(%{channel_id: new_channel_id, user_id: user_id} = _) do
+    default_voice_channel = Application.get_env(:senkosan, :default_voice_channel)
     user = :ets.lookup_element(@table_name, user_id, 2)
     trig_time =
       DateTime.utc_now()
@@ -44,11 +44,11 @@ defmodule Senkosan.Ets.VoiceState do
     case {user.channel_id, new_channel_id, DateTime.compare(user.left_at, trig_time)} do
       {prev, new, _} when prev == new ->
         :mic_op
-      {_, @default_voice_channel, :lt} ->
+      {_, ^default_voice_channel, :lt} ->
         new_user_attr = Map.put(user, :channel_id, new_channel_id)
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :join
-      {_, @default_voice_channel, _} ->
+      {_, ^default_voice_channel, _} ->
         new_user_attr = Map.put(user, :channel_id, new_channel_id)
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :reload
