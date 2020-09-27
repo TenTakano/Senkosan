@@ -10,8 +10,10 @@ defmodule Senkosan.Util do
     case {VoiceState.bot_user?(user_id), react_to_bot} do
       {{:ok, false}, _} ->
         f.()
+
       {{:ok, true}, true} ->
         f.()
+
       _ ->
         :ok
     end

@@ -18,10 +18,12 @@ defmodule Senkosan.UtilTest do
 
     test "always executes the given function if the user is not a bot", %{func: f} do
       user_id = 1
+
       user_attrs = %VoiceState{
         name: "someone",
         is_bot: false
       }
+
       :ets.insert(@voice_state_table_name, {user_id, user_attrs})
 
       Enum.each([true, false], fn react_to_bot ->
@@ -30,21 +32,28 @@ defmodule Senkosan.UtilTest do
       end)
     end
 
-    test "executes the given function even if the user is a bot when react_to_bot is true", %{func: f} do
+    test "executes the given function even if the user is a bot when react_to_bot is true", %{
+      func: f
+    } do
       user_id = 1
+
       user_attrs = %VoiceState{
         name: "someone",
         is_bot: true
       }
+
       :ets.insert(@voice_state_table_name, {user_id, user_attrs})
 
-      Enum.each([
-        {true, :do_something},
-        {false, :ok}
-      ], fn {react_to_bot, expected} ->
-        Application.put_env(:senkosan, :react_to_bot, react_to_bot)
-        assert Util.apply_bot_usage(user_id, f) == expected
-      end)
+      Enum.each(
+        [
+          {true, :do_something},
+          {false, :ok}
+        ],
+        fn {react_to_bot, expected} ->
+          Application.put_env(:senkosan, :react_to_bot, react_to_bot)
+          assert Util.apply_bot_usage(user_id, f) == expected
+        end
+      )
     end
   end
 end
