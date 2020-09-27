@@ -31,5 +31,5 @@ defmodule Senkosan.MessageFactory do
       suppress: false,
       user_id: user_id
     }
-  end  
+  end
 end

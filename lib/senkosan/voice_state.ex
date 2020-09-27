@@ -1,4 +1,6 @@
-defmodule Senkosan.Ets.VoiceState do
+defmodule Senkosan.VoiceState do
+  @moduledoc false
+
   use Agent
 
   @type t :: __MODULE__.t

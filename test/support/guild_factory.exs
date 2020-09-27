@@ -31,6 +31,6 @@ defmodule Senkosan.GuildFactory do
       voice_states: nil,
       widget_channel_id: nil,
       widget_enabled: nil
-    }  
+    }
   end
 end

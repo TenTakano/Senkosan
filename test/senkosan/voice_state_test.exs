@@ -1,8 +1,8 @@
-defmodule Senkosan.Ets.VoiceStateTest do
+defmodule Senkosan.VoiceStateTest do
   use ExUnit.Case, async: true
 
-  alias Senkosan.{UserFactory, MessageFactory}
-  alias Senkosan.Ets.VoiceState
+  alias Senkosan.{MessageFactory, UserFactory}
+  alias Senkosan.VoiceState
 
   @table_name :senkosan_voice_state
 
@@ -116,7 +116,7 @@ defmodule Senkosan.Ets.VoiceStateTest do
         message = Map.put(message_base, :channel_id, dest)
         user = Map.put(user_base, :channel_id, orig)
         :ets.update_element(@table_name, user_id, {2, user})
-        
+
         assert VoiceState.process_transition(message) == :other_transition
 
         user_channel_id = :ets.lookup_element(@table_name, user_id, 2) |> Map.get(:channel_id)
