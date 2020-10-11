@@ -15,7 +15,6 @@ defmodule Senkosan.VoiceState do
 
   @doc """
   Creates a table to contain the voice states and insertes user states.
-  Each user state is fetched by Discord guild member list API
   """
   @spec init() :: :ok
   def init() do
