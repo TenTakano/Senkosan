@@ -135,6 +135,24 @@ defmodule Senkosan.VoiceStateTest do
     end
   end
 
+  describe "get_user/1" do
+    setup do
+      :ets.new(@table_name, [:ordered_set, :protected, :named_table])
+      :ok
+    end
+
+    test "returns user attributes in ETS table" do
+      user_id = 1
+      attrs = %VoiceState{
+        name:   "someone",
+        is_bot: false,
+      }
+      :ets.insert(@table_name, {user_id, attrs})
+
+      assert VoiceState.get_user(user_id) == attrs
+    end
+  end
+
   describe "bot_user?/1 " do
     setup do
       :ets.new(@table_name, [:ordered_set, :protected, :named_table])
