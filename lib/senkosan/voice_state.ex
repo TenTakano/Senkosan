@@ -3,6 +3,8 @@ defmodule Senkosan.VoiceState do
 
   use Agent
 
+  alias Nostrum.Api
+
   @type t :: __MODULE__.t()
 
   @enforce_keys [:name, :is_bot]
@@ -13,23 +15,10 @@ defmodule Senkosan.VoiceState do
 
   @doc """
   Creates a table to contain the voice states and insertes user states.
-  Each user state is fetched by Discord guild member list API
   """
-  @spec init(integer) :: :ok
-  def init(guild_id) do
+  @spec init() :: :ok
+  def init() do
     :ets.new(@table_name, [:ordered_set, :public, :named_table])
-
-    guild_id
-    |> Nostrum.Api.list_guild_members!(limit: 1000)
-    |> Enum.each(fn %{user: user} ->
-      attrs = %__MODULE__{
-        name: user.username,
-        is_bot: if(user.bot, do: user.bot, else: false)
-      }
-
-      :ets.insert(@table_name, {user.id, attrs})
-    end)
-
     :ok
   end
 
@@ -39,7 +28,7 @@ defmodule Senkosan.VoiceState do
   @spec process_transition(map) :: atom
   def process_transition(%{channel_id: new_channel_id, user_id: user_id} = _) do
     default_voice_channel = Application.get_env(:senkosan, :default_voice_channel)
-    user = :ets.lookup_element(@table_name, user_id, 2)
+    user = get_user(user_id)
 
     trig_time =
       DateTime.utc_now()
@@ -66,6 +55,39 @@ defmodule Senkosan.VoiceState do
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :other_transition
     end
+  end
+
+  @doc """
+  Returns user attributes from ETS table.
+  In case the user doesn't exist, create it by fetching with discord API
+  """
+  def get_user(user_id) do
+    case :ets.lookup(@table_name, user_id) do
+      [{_, user}] ->
+        user
+
+      [] ->
+        user_attrs =
+          get_guild_id()
+          |> Api.get_guild_member!(user_id)
+          |> format_user_attrs()
+
+        :ets.insert(@table_name, {user_id, user_attrs})
+        user_attrs
+    end
+  end
+
+  defp get_guild_id() do
+    Api.get_current_user_guilds!()
+    |> hd()
+    |> Map.fetch!(:id)
+  end
+
+  defp format_user_attrs(%{user: user}) do
+    %__MODULE__{
+      name: user.username,
+      is_bot: if(user.bot, do: user.bot, else: false)
+    }
   end
 
   @doc """

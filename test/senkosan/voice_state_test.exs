@@ -1,26 +1,16 @@
 defmodule Senkosan.VoiceStateTest do
   use ExUnit.Case, async: true
 
-  alias Senkosan.{MessageFactory, UserFactory}
+  alias Nostrum.Api
+  alias Senkosan.{GuildFactory, MessageFactory, UserFactory}
   alias Senkosan.VoiceState
 
   @table_name :senkosan_voice_state
 
   describe "init/1 " do
-    test "creates voice_state table on ETS and inserts the formatted user attributes" do
-      guild_id = 123
-      users = UserFactory.build_pair(:guild_member)
-      :meck.expect(Nostrum.Api, :list_guild_members!, fn ^guild_id, limit: 1000 -> users end)
-
-      expected =
-        users
-        |> Enum.map(fn %{user: user} ->
-          {user.id, %VoiceState{name: user.username, is_bot: user.bot}}
-        end)
-        |> Enum.sort_by(&elem(&1, 0))
-
-      assert VoiceState.init(guild_id) == :ok
-      assert List.flatten(:ets.match(@table_name, :"$1")) == expected
+    test "creates voice_state table on ETS" do
+      assert VoiceState.init() == :ok
+      refute :ets.whereis(@table_name) == :undefined
     end
   end
 
@@ -132,6 +122,45 @@ defmodule Senkosan.VoiceStateTest do
           assert user_channel_id == dest
         end
       )
+    end
+  end
+
+  describe "get_user/1" do
+    setup do
+      :ets.new(@table_name, [:ordered_set, :protected, :named_table])
+      :ok
+    end
+
+    test "returns user attributes in ETS table" do
+      user_id = 1
+
+      attrs = %VoiceState{
+        name: "someone",
+        is_bot: false
+      }
+
+      :ets.insert(@table_name, {user_id, attrs})
+
+      assert VoiceState.get_user(user_id) == attrs
+    end
+
+    test "returns user attributes fetched by discord API in case ETS table doesn't have the user" do
+      guild_member = UserFactory.build(:guild_member)
+      user_id = guild_member.user.id
+
+      expected = %VoiceState{
+        name: guild_member.user.username,
+        is_bot: guild_member.user.bot
+      }
+
+      guilds = [GuildFactory.build(:guild)]
+      guild_id = Map.fetch!(hd(guilds), :id)
+      :meck.expect(Api, :get_current_user_guilds!, fn -> guilds end)
+      :meck.expect(Api, :get_guild_member!, fn ^guild_id, ^user_id -> guild_member end)
+
+      VoiceState.get_user(user_id)
+      assert VoiceState.get_user(user_id) == expected
+      assert :ets.lookup_element(@table_name, user_id, 2) == expected
     end
   end
 
