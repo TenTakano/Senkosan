@@ -80,7 +80,7 @@ defmodule Senkosan.VoiceState do
     |> Map.fetch!(:id)
   end
 
-  defp format_user_attrs(user) do
+  defp format_user_attrs(%{user: user}) do
     %__MODULE__{
       name: user.username,
       is_bot: if(user.bot, do: user.bot, else: false)
