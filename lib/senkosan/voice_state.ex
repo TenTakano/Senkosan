@@ -3,6 +3,8 @@ defmodule Senkosan.VoiceState do
 
   use Agent
 
+  alias Nostrum.Api
+
   @type t :: __MODULE__.t()
 
   @enforce_keys [:name, :is_bot]
@@ -20,7 +22,7 @@ defmodule Senkosan.VoiceState do
     :ets.new(@table_name, [:ordered_set, :public, :named_table])
 
     guild_id
-    |> Nostrum.Api.list_guild_members!(limit: 1000)
+    |> Api.list_guild_members!(limit: 1000)
     |> Enum.each(fn %{user: user} ->
       attrs = %__MODULE__{
         name: user.username,
@@ -73,7 +75,29 @@ defmodule Senkosan.VoiceState do
   In case the user doesn't exist, create it by fetching with discord API
   """
   def get_user(user_id) do
-    :ets.lookup_element(@table_name, user_id, 2)
+    case :ets.lookup(@table_name, user_id) do
+      [{_, user}] -> user
+      [] ->
+        user_attrs =
+          get_guild_id()
+          |> Api.get_guild_member!(user_id)
+          |> format_user_attrs()
+        :ets.insert(@table_name, {user_id, user_attrs})
+        user_attrs
+    end
+  end
+
+  defp get_guild_id() do
+    Api.get_current_user_guilds!()
+    |> hd()
+    |> Map.fetch!(:id)
+  end
+
+  defp format_user_attrs(user) do
+    %__MODULE__{
+      name: user.username,
+      is_bot: if(user.bot, do: user.bot, else: false)
+    }
   end
 
   @doc """

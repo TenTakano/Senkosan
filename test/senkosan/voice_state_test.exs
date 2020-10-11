@@ -1,7 +1,8 @@
 defmodule Senkosan.VoiceStateTest do
   use ExUnit.Case, async: true
 
-  alias Senkosan.{MessageFactory, UserFactory}
+  alias Nostrum.Api
+  alias Senkosan.{GuildFactory, MessageFactory, UserFactory}
   alias Senkosan.VoiceState
 
   @table_name :senkosan_voice_state
@@ -10,7 +11,7 @@ defmodule Senkosan.VoiceStateTest do
     test "creates voice_state table on ETS" do
       guild_id = 123
       users = UserFactory.build_pair(:guild_member)
-      :meck.expect(Nostrum.Api, :list_guild_members!, fn ^guild_id, limit: 1000 -> users end)
+      :meck.expect(Api, :list_guild_members!, fn ^guild_id, limit: 1000 -> users end)
 
       expected =
         users
@@ -150,6 +151,24 @@ defmodule Senkosan.VoiceStateTest do
       :ets.insert(@table_name, {user_id, attrs})
 
       assert VoiceState.get_user(user_id) == attrs
+    end
+
+    test "returns user attributes fetched by discord API in case ETS table doesn't have the user" do
+      user = UserFactory.build(:user)
+      user_id = user.id
+      expected = %VoiceState{
+        name:   user.username,
+        is_bot: user.bot,
+      }
+
+      guilds = [GuildFactory.build(:guild)]
+      guild_id = Map.fetch!(hd(guilds), :id)
+      :meck.expect(Api, :get_current_user_guilds!, fn -> guilds end)
+      :meck.expect(Api, :get_guild_member!, fn (^guild_id, ^user_id) -> user end)
+
+      VoiceState.get_user(user_id)
+      assert VoiceState.get_user(user_id) == expected
+      assert :ets.lookup_element(@table_name, user_id, 2) == expected
     end
   end
 
