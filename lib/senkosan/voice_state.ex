@@ -17,21 +17,9 @@ defmodule Senkosan.VoiceState do
   Creates a table to contain the voice states and insertes user states.
   Each user state is fetched by Discord guild member list API
   """
-  @spec init(integer) :: :ok
-  def init(guild_id) do
+  @spec init() :: :ok
+  def init() do
     :ets.new(@table_name, [:ordered_set, :public, :named_table])
-
-    guild_id
-    |> Api.list_guild_members!(limit: 1000)
-    |> Enum.each(fn %{user: user} ->
-      attrs = %__MODULE__{
-        name: user.username,
-        is_bot: if(user.bot, do: user.bot, else: false)
-      }
-
-      :ets.insert(@table_name, {user.id, attrs})
-    end)
-
     :ok
   end
 
