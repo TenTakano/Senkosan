@@ -7,7 +7,7 @@ defmodule Senkosan.VoiceStateTest do
   @table_name :senkosan_voice_state
 
   describe "init/1 " do
-    test "creates voice_state table on ETS and inserts the formatted user attributes" do
+    test "creates voice_state table on ETS" do
       guild_id = 123
       users = UserFactory.build_pair(:guild_member)
       :meck.expect(Nostrum.Api, :list_guild_members!, fn ^guild_id, limit: 1000 -> users end)

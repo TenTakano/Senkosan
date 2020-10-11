@@ -39,7 +39,7 @@ defmodule Senkosan.VoiceState do
   @spec process_transition(map) :: atom
   def process_transition(%{channel_id: new_channel_id, user_id: user_id} = _) do
     default_voice_channel = Application.get_env(:senkosan, :default_voice_channel)
-    user = :ets.lookup_element(@table_name, user_id, 2)
+    user = get_user(user_id)
 
     trig_time =
       DateTime.utc_now()
@@ -66,6 +66,14 @@ defmodule Senkosan.VoiceState do
         :ets.update_element(@table_name, user_id, {2, new_user_attr})
         :other_transition
     end
+  end
+
+  @doc """
+  Returns user attributes from ETS table.
+  In case the user doesn't exist, create it by fetching with discord API
+  """
+  def get_user(user_id) do
+    :ets.lookup_element(@table_name, user_id, 2)
   end
 
   @doc """
