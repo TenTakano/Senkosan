@@ -133,10 +133,12 @@ defmodule Senkosan.VoiceStateTest do
 
     test "returns user attributes in ETS table" do
       user_id = 1
+
       attrs = %VoiceState{
-        name:   "someone",
-        is_bot: false,
+        name: "someone",
+        is_bot: false
       }
+
       :ets.insert(@table_name, {user_id, attrs})
 
       assert VoiceState.get_user(user_id) == attrs
@@ -145,15 +147,16 @@ defmodule Senkosan.VoiceStateTest do
     test "returns user attributes fetched by discord API in case ETS table doesn't have the user" do
       guild_member = UserFactory.build(:guild_member)
       user_id = guild_member.user.id
+
       expected = %VoiceState{
-        name:   guild_member.user.username,
-        is_bot: guild_member.user.bot,
+        name: guild_member.user.username,
+        is_bot: guild_member.user.bot
       }
 
       guilds = [GuildFactory.build(:guild)]
       guild_id = Map.fetch!(hd(guilds), :id)
       :meck.expect(Api, :get_current_user_guilds!, fn -> guilds end)
-      :meck.expect(Api, :get_guild_member!, fn (^guild_id, ^user_id) -> guild_member end)
+      :meck.expect(Api, :get_guild_member!, fn ^guild_id, ^user_id -> guild_member end)
 
       VoiceState.get_user(user_id)
       assert VoiceState.get_user(user_id) == expected

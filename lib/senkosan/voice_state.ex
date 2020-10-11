@@ -63,12 +63,15 @@ defmodule Senkosan.VoiceState do
   """
   def get_user(user_id) do
     case :ets.lookup(@table_name, user_id) do
-      [{_, user}] -> user
+      [{_, user}] ->
+        user
+
       [] ->
         user_attrs =
           get_guild_id()
           |> Api.get_guild_member!(user_id)
           |> format_user_attrs()
+
         :ets.insert(@table_name, {user_id, user_attrs})
         user_attrs
     end
